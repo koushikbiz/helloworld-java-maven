@@ -19,13 +19,13 @@
         <repository>
             <id>deployment</id>
             <name>Internal Releases</name>
-            <url>http://18.219.190.136:8081/repository/maven-releases/</url>
+            <url>http://18.219.190.136:8081/service/rest/repository/browse/maven-releases</url>
         </repository>
 
         <snapshotRepository>
             <id>deployment</id>
             <name>Internal Releases</name>
-            <url>http://18.219.190.136:8081/repository/maven-snapshots/</url>
+            <url>http://18.219.190.136:8081/service/rest/repository/browse/maven-snapshots</url>
         </snapshotRepository>
     </distributionManagement> 
     
