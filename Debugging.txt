@@ -1,0 +1,88 @@
+##############################  HYBRID FRAMEWORK PROJECT ##############################################
+1. Issue - JDK path required to compile
+Solution:
+Edit installed JRE path to change it to JDK
+Window > Preferences > Java > Installed JREs > and check your installed JREs
+Press Edit button and change path to the JDK Folder
+Right-Click on your Project -> Maven -> Update Project
+
+2. Issues:
+invalid CEN header (bad signature)
+invalid LOC header (bad signature)
+Solution:
+Exit eclipse
+Deleted .m2 repository
+Start eclipe and load project
+Right-Click on your Project -> Maven -> Update Project
+
+3. Issue - Nothing to compile - all classes are up to date
+Solution:
+deleted the target folder and ran maven test again
+
+4. Issue - No goal specified in run configuration
+Solution: 
+Specified goal as test and base directory - ${workspace_loc:/OnlineStore}
+
+5. Issue - Test case not executing
+Solution:
+Selenium 3 needs gecko browser engine and marionette driver to interact with Firefox. Added the following before FirefoxDriver initialization:
+System.setProperty("webdriver.gecko.driver","C:/Users/Me/Downloads/geckodriver-v0.20.1-win64/geckodriver.exe");
+DesiredCapabilities capabilities = DesiredCapabilities.firefox();
+capabilities.setCapability("marionette", true);
+
+6. Issue: Maven not able to execute test
+Solution:
+Probably class name requres "Test" string in it. Workaround by running test class as java application
+
+7. Issue - eclipse xssfsheet cannot be resolved to a type
+Solution:
+Added the following maven dependency
+<dependency>
+    <groupId>org.apache.poi</groupId>
+    <artifactId>poi-ooxml</artifactId>
+    <version>3.11</version>
+</dependency>
+
+8. Issue - method object is giving nullpointerexception
+Solution:
+Instead of constructor, initialized the method in public static void create_Object()
+
+9. Issue - import org.apache.log4j cannot be resolved
+Solution:
+Imported org.apache.logging.log4j which is applicable for Log4j 2. The above one is for Log4j 1.2
+Also Logger.getLogger is replaced by LogManager.getLogger
+
+10.Issue - DOMConfigurator.configure("log4j.xml") does not work in Log4j 2
+Solution:
+Used System.setProperty("log4j.configurationFile", "file:///C:/Users/Me/eclipse-workspace/OnlineStore/log4j2.xml");
+Replaced log4j.xml with log4j2.xml as given in https://logging.apache.org/log4j/2.x/manual/configuration.html
+Prefixed path name with file:///
+
+11. Issue - RETURN_BLANK_AS_NULL cannot be resolved or is not a field
+Solution:
+import org.apache.poi.ss.usermodel.Row.MissingCellPolicy;
+Cell = Row.getCell(ColNum, MissingCellPolicy.RETURN_BLANK_AS_NULL);
+
+12. Issue - Test Case was marked FAIL
+Solution:
+for (;iTestStep<=iTestLastStep;iTestStep++) changed to for (;iTestStep<iTestLastStep;iTestStep++)
+
+###################### SIKULI PROJECT ###################################################################
+1. Issue - sikuli-script.jar not available in maven
+Solution:
+Steps:
+i. Download sikuli-setup.jar from https://launchpad.net/sikuli/+download
+ii. Copy sikuli-setup.jar to C:\Users\Me\eclipse-workspace\SikuliDemo\lib
+iii. Run sikuli-setup.jar. It creates runSetup.cmd
+iv. Run runSetup.cmd from command line
+v. Selection Pack2
+vi. Add the dependency in pom.xml
+<dependency>
+  		<groupId>org.sikuli</groupId>
+  		<artifactId>sikuli-api</artifactId>
+  		<version>1.0.1</version>
+  		<systemPath>${project.basedir}\lib\sikuli-script.jar</systemPath>
+  		<scope>system</scope>
+  	</dependency>
+
+2. 

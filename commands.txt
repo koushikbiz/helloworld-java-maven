@@ -1,0 +1,236 @@
+cd /opt/
+yum install wget
+wget https://www.atlassian.com/software/jira/downloads/binary/atlassian-jira-software-7.8.1-x64.bin
+
+
+##http://www.scmgalaxy.com/tutorials/complete-guide-of-java-installation-in-linux/
+yum install java-1.8.0-openjdk-devel
+chmod 755 atlassian-jira-software-7.8.1-x64.bin
+./atlassian-jira-software-7.8.1-x64.bin
+
+##Ran into problem - https://jira.atlassian.com/browse/JRASERVER-33663
+yum install dejavu-sans-fonts
+./atlassian-jira-software-7.8.1-x64.bin
+
+###Installation Directory: /opt/atlassian/jira
+###Home Directory: /var/atlassian/application-data/jira
+
+##Created Custom TCP Rule for Inbound traffic (port 8080) under security group
+##Access JIRA at http://localhost:8080
+##Login using Google and select JIRA Software (Server)
+##Administrator account koushikbiz/kd9179720
+
+#JIRA stopped to restart JIRA
+./start-jira.sh in bin folder
+
+##Investigated the CPU and found that CPU and memory usage is high. Swicthed to T2 medium with 4 GB
+##Completed JIRA installation with license key and created ticket PROD-1
+##Signed up to github.com with account koushikbiz/kd9179720
+##created a repository named helloworld-java-maven (https://github.com/koushikbiz/helloworld-java-maven/upload/master) and copied some dummy files and pom.xml from laptop
+##Committed the changes into master branch
+
+##Installed jdk and updated Path variable by both JDK and JRE /bin location. Added JAVA_HOME user variable and set it to JDK folder. To test run java -version from command prompt
+##Installed Maven and set M2_HOME and MAVEN_HOME system variables with /bin location. Also updated Path variable. To test run mvn -version from command prompt
+
+##Installed Git for windows and added C:\Program Files\Git\bin and cmd in Path system variable
+##Lauched Git bash and run the following commands:
+git config --global user.name "Koushik Das"
+git config --global user.email "koushikbiz@gmail.com"
+cd /c
+cd Documents/Personal/AWS/Test\ Project/
+git clone https://github.com/koushikbiz/helloworld-java-maven
+cd helloworld-java-maven/
+ls
+mvn compile
+mvn test
+mvn package
+
+##Install Sonatype Nexus in AWS host with the following commands:
+wget https://download.sonatype.com/nexus/3/latest-unix.tar.gz
+yum install unzip
+tar -zxvf latest-unix.tar.gz
+cd nexus-3.10.0-04/
+ls
+cd bin/
+ls
+./nexus start
+
+## To find the port number of Nexus
+cd ..
+ls
+cd etc/
+ls
+more nexus-default.properties (port 8081)
+
+## To access Nexus, create an inbound rule for port 8081 in AWS security group
+##http://18.188.168.209:8081/ where the IP is a dynamic IP
+##sign in as admin/admin123 (this is a default user)
+##click on the link browse
+##copy the maven-releases and maven-snapshots URL and commit it in pom.xml in github under <distributionManagement>/<repository> and <snapshotRepository>
+## Change the server tag in C:\Program Files\Apache\Maven\conf\settings.xml as follows:
+<server>
+      <id>deployment</id>
+      <username>admin</username>
+      <password>admin123</password>
+</server>
+##Open git bash and go to helloworld-java-maven. Run:
+git pull origin master
+mvn deploy
+##click on browse link and see jar copied in maven-releases
+
+
+##Install Sonarqube for static code analysis in AWS host
+wget https://sonarsource.bintray.com/Distribution/sonarqube/sonarqube-7.0.zip
+ls
+unzip sonarqube-7.0.zip
+clear
+ls
+cd sonarqube-7.0
+ls
+cd bin
+ls
+cd linux-x86-64/
+ls
+./sonar.sh start
+
+##Problem faced. Sonarqube elastic search does not run as root user. Created sonar user as follows:
+groupadd sonar
+useradd -c "Sonar System user" -d /opt/sonarqube-7.0 -g sonar -s /bin/bash sonar
+chown -R sonar:sonar /opt/sonarqube-7.0
+vi sonar.sh
+##set RUN_AS_USER=sonar
+./sonar.sh console
+
+##Install Jenkins
+##Go to https://pkg.jenkins.io/redhat/
+##Run the commands shown in AWS host
+cd /opt
+sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo
+sudo rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
+yum install jenkins
+##Change the port of jenkins to avoid conflict with JIRA
+cd /etc/init.d/
+ls
+more jenkins
+##Look for JENKINS_CONFIG=/etc/sysconfig/jenkins
+vi /etc/sysconfig/jenkins
+##Set JENKINS_PORT="8090"
+##Start jenkins by running:
+systemctl start jenkins
+##Access jenkins in browser. Ex - http://18.219.190.136:8090
+##Go to AWS host to view and copy the password
+more /var/lib/jenkins/secrets/initialAdminPassword
+##Enter the password in browser and hit Continue button
+##Create admin user koushikbiz/kd9179720
+
+
+##Create Jenkins job "Project Code Analysis" and input the git repository URL, Save
+##Back to Dashboard and Manage Jenkins-> Manage Plugins
+##Look for sonarqube plugin under Available tab
+##Select "SonarQube Scanner" and Install without restart
+##Click on Configure from job page
+##Select "Execute Sonarqube Scanner" from Build section and Save
+##Hit "Build Now" and observe the console Output
+
+##Install git in AWS
+yum install git
+
+##Go to Jenkins job page and click "Build Now". This time Sonarqube server installation is required for this job
+##Back to Dashboard -> Manage Jenkins -> Configure System
+##In the "SonarQube servers" section click on "Add SonarQube", give a name (example - sonarqube) and URL (example - http://18.219.190.136:9000)
+##Generate a token after login to sonarqube URL using admin/admin
+##Input this token in "Server authentication token" filed in "SonarQube servers" section
+##Save
+
+##To configure Sonarqube scanner: Manage Jenkins -> Global Tool Configuration
+##In "SonarQube Scanner" section, click on "Add SonarQube Scanner"
+##Input "scanner" in "Name" field and select "Install automatically"
+##Save
+
+##Click "Build Now"
+##Discovered that sonar-project.properties file was missing in github, created one and specified sonar.projectKey=ProdX; sonar.projectName=ProdX; sonar.sources=./src/main/java; sonar.tests=./src/test/java
+##Click "Build Now" and build success
+##Job page would now show "SonarQube" link for showing static code analysis details
+
+##Create a new job "Compile" and put the name of previous job "Code Analysis" in the Copy From field. click OK
+##Configure the Job - same repository, remove static code analysis and select "Invoke top-level Maven targets"
+##Selected "compile" as the Goal name and clicked Save
+
+
+##Manage Jenkins -> Global Tool Configuration
+##Add Maven -> select Name as "maven" and "Install automatically"
+##Save
+
+##Configure the "Compile" Job -> Build -> select "maven" from "Maven Version" drop-down and clicked "Save"
+##Click "Build Now" and success
+
+##Create a new Job "UT" and copy from "Compile"
+##In the configuration page, put goal name as "test" and Save
+##Click "Build Now" and success
+
+##Create a new Job "Package" and copy from "Compile"
+##In the configuration page, put goal name as "package" and Save
+##Click "Build Now" and success
+
+##Get the maven location by building 'Compile" job and looking at console output - /var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/maven
+##In the AWS host go to the maven location
+cd /var/lib/jenkins/tools/hudson.tasks.Maven_MavenInstallation/maven
+ls
+cd conf/
+ls
+vi settings.xml
+##Add the following entry and save
+<server>
+      <id>deployment</id>
+      <username>admin</username>
+      <password>admin123</password>
+</server>
+
+##Create a new Job "Dep2Nexus" and copy from "Compile"
+##In the configuration page, put goal name as "deploy" and Save
+##Click "Build Now" and success
+
+##Add post build action for UT job, select "Publish Junit test result report"
+##Test report XMLs location is "target" (sure-fire plugin yet to be fixed)
+##Save
+
+##Create a dummy new Job "Dep2QA" and Save
+##Click "Build Now" and success
+
+##Create a dummy new Job "AT" and Save
+##Click "Build Now" and success
+
+##Create a new Job "Code Coverage" and copy from "Compile"
+##In the configuration page, delete maven from Build section and Save
+##Back to Dashboard and Manage Jenkins-> Manage Plugins
+##In the Available section, look for JaCoCo plugin and click "Install without Restart"
+##In the Configure page of the "Code Coverage" Job, go to Build section and select "Invoke top-level Maven targets"
+##Put "maven" as Maven Version and "verify" as Goal
+##In the Post-build Actions, select "Record JaCoCo coverage report"
+##Save
+##Click "Build Now" and success
+
+##Linking Jobs - Go to Configuration page of Code Analysis -> Post-build Actions -> Build other projects -> Select "Compile" and Save
+##Go to Configuration page of Compile -> Post-build Actions -> Build other projects -> Select "UT" and Save
+##Go to Configuration page of UT -> Post-build Actions -> Build other projects -> Select "Package" and Save
+##Go to Configuration page of Package -> Post-build Actions -> Build other projects -> Select "Dep2Nexus" and Save
+##Go to Configuration page of Dep2Nexus -> Post-build Actions -> Build other projects -> Select "Dep2QA" and Save
+##Go to Configuration page of Dep2QA -> Post-build Actions -> Build other projects -> Select "AT" and Save
+##Go to Configuration page of AT -> Post-build Actions -> Build other projects -> Select "Code Coverage" and Save
+
+##Setting up Pipeline - Go to Manage Jenkins-> Manage Plugins
+##In the Available section, look for Build Pipeline plugin and click "Install without Restart"
+##Back to Dashboard and click + button next to All panel
+##Select "Build Pipeline View" and View name "ProdX CICD Pipeline"
+##Click OK
+##In the Layout section, select "Code Analysis" in "Select Initial Job" drop-down, No Of Displayed Builds 10 and click OK
+##Configure again - Build Pipeline View Title as ProdX CICD Pipeline and Pipe
+
+
+##Integrate JIRA with bitbucket
+
+##Go to github.com -> settings -> Developer settings -> Register a new OAuth application -> ProdX (name) -> http://18.219.190.136:8080/ as URL(s) -> Register application -> Put the client id and secret in JIRA
+Client ID
+1a5cd3305eb1ee113f35
+Client Secret
+e64d8b7f7066244b73674c5d0107b1e461dbd2bf
